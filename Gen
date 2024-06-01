@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Lesson Plan Generator</title>
+	<style>
+    	body {
+        	font-family: 'Times New Roman', Times, serif;
+        	font-size: 10pt;
+        	margin: 20px;
+        	background-color: #f4f4f4;
+        	line-height: 1.2;
+    	}
+    	h1 {
+        	text-align: center;
+        	color: #2C6694; /* Darkened blue color */
+        	font-size: 24pt;
+        	margin-bottom: 20px;
+    	}
+    	form {
+        	max-width: 800px;
+        	margin: 0 auto;
+        	background: #fff;
+        	padding: 20px;
+        	border-radius: 8px;
+        	box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        	position: relative;
+    	}
+    	label {
+        	font-weight: bold;
+        	display: block;
+        	margin-bottom: 5px;
+        	font-family: 'Times New Roman', Times, serif;
+        	font-size: 12pt;
+    	}
+    	.editable {
+        	width: calc(100% - 52px);
+        	padding: 10px;
+        	margin-bottom: 15px;
+        	border: 1px solid #ccc;
+        	border-radius: 4px;
+        	box-sizing: border-box;
+        	font-family: 'Times New Roman', Times, serif;
+        	font-size: 12pt;
+        	min-height: 50px;
+    	}
+    	input.timing-input {
+        	width: 100px; /* Make the timing input field larger */
+    	}
+    	.section {
+        	margin-bottom: 20px;
+    	}
+    	button {
+        	display: inline-block;
+        	padding: 10px 20px;
+        	background-color: #74A9D3; /* Updated color */
+        	color: white;
+        	font-size: 12pt;
+        	border: none;
+        	border-radius: 10px;
+        	cursor: pointer;
+        	margin-top: 10px;
+        	margin-right: 10px;
+        	font-family: 'Times New Roman', Times, serif;
+    	}
+    	button:hover {
+        	background-color: #4F91B5;
+    	}
+    	.category-heading {
+        	background-color: #74A9D3; /* Updated color */
+        	color: white;
+        	font-weight: bold;
+        	text-align: center;
+    	}
+    	.sub-category-heading {
+        	background-color: #C5DCEE; /* Updated color */
+        	font-weight: bold;
+        	text-align: center;
+    	}
+    	.sub-category-heading-light {
+        	background-color: #E3F2FD; /* Even lighter blue for differentiation categories */
+        	font-weight: bold;
+        	text-align: center;
+    	}
+    	.center-buttons {
+        	text-align: center;
+        	margin-top: 20px;
+    	}
+    	table {
+        	width: calc(100% - 40px);
+        	max-width: 6.5in;
+        	border-collapse: collapse;
+        	margin-bottom: 20px;
+        	background-color: #fff;
+        	margin-left: auto;
+        	margin-right: auto;
+    	}
+    	table, th, td {
+        	border: 1px solid #ddd;
+        	font-size: 10pt;
+        	line-height: 1.2;
+    	}
+    	th, td {
+        	padding: 5px;
+        	text-align: left;
+    	}
+    	th {
+        	background-color: #C5DCEE; /* Updated color */
+    	}
+    	.first-column {
+        	width: 10%; /* Adjusted to take less space */
+    	}
+    	.second-column, .third-column {
+        	width: 40%; /* Adjusted to take equal space */
+    	}
+    	.fourth-column {
+        	width: 10%; /* Set the timing column width */
+    	}
+    	.differentiation-textarea {
+        	width: calc(100% - 22px);
+        	height: calc(80% - 15px); /* Shrink the size by 20% */
+        	padding: 8px;
+        	border: 1px solid #ccc;
+        	border-radius: 4px;
+        	box-sizing: border-box;
+        	font-family: 'Times New Roman', Times, serif;
+        	font-size: 10pt;
+    	}
+    	#generated-lesson-plan {
+        	max-width: 6.5in;
+        	margin: 40px auto 0;
+        	font-size: 10pt;
+        	line-height: 1.2;
+    	}
+    	#hidden-container {
+        	position: absolute;
+        	left: -9999px;
+        	top: -9999px;
+    	}
+    	.toolbar {
+        	position: fixed;
+        	top: 100px;
+        	left: 10px;
+        	display: flex;
+        	flex-direction: column;
+    	}
+    	.toolbar button {
+        	display: inline-block;
+        	padding: 5px 10px;
+        	margin: 5px 0;
+        	background-color: #74A9D3;
+        	color: white;
+        	border: none;
+        	border-radius: 15px;
+        	cursor: pointer;
+        	width: 100px;
+    	}
+    	.toolbar button:hover {
+        	background-color: #4F91B5;
+    	}
+	</style>
+	<script>
+    	function execCommand(command) {
+        	document.execCommand(command, false, null);
+    	}
+
+    	function execCommandWithArg(command, arg) {
+        	document.execCommand(command, false, arg);
+    	}
+
+    	function addRow() {
+        	const table = document.getElementById("lesson-steps-table").getElementsByTagName('tbody')[0];
+        	const rowCount = table.rows.length;
+        	const newRow = table.insertRow();
+
+        	newRow.innerHTML = `
+            	<td class="first-column">${rowCount + 1}</td>
+            	<td class="second-column"><div contenteditable="true" class="editable"></div></td>
+            	<td class="third-column"><div contenteditable="true" class="editable"></div></td>
+            	<td class="fourth-column"><input type="text" class="timing-input" name="timing" onblur="updateTiming(this, ${rowCount})"></td>
+        	`;
+
+        	newRow.cells[1].querySelector('.editable').focus();
+    	}
+
+    	function updateTiming(input, rowIndex) {
+        	const table = document.getElementById("lesson-steps-table").getElementsByTagName('tbody')[0];
+        	const currentRow = table.rows[rowIndex];
+        	const currentTiming = parseInt(input.value) || 0;
+        	let previousRemaining = 55;
+
+        	if (rowIndex > 0) {
+            	const previousRow = table.rows[rowIndex - 1];
+            	const previousTimingText = previousRow.cells[3].querySelector('input').value;
+            	previousRemaining = parseInt(previousTimingText.split('(')[1]) - currentTiming;
+        	} else {
+            	previousRemaining = 55 - currentTiming;
+        	}
+
+        	input.value = `${currentTiming} (${previousRemaining})`;
+    	}
+
+    	document.addEventListener('DOMContentLoaded', () => {
+        	document.addEventListener('keydown', function(event) {
+            	if (event.ctrlKey && event.key === 'Enter') {
+                	event.preventDefault();
+                	document.execCommand('insertLineBreak');
+            	} else if (event.shiftKey && event.key === 'Enter') {
+                	event.preventDefault();
+                	addRow();
+            	}
+        	});
+
+        	document.addEventListener('keydown', function(event) {
+            	if (event.ctrlKey && event.key === 'b') {
+                	event.preventDefault();
+                	execCommand('bold');
+            	} else if (event.ctrlKey && event.key === 'i') {
+                	event.preventDefault();
+                	execCommand('italic');
+            	} else if (event.ctrlKey && event.key === 'k') {
+                	event.preventDefault();
+                	execCommandWithArg('createLink', prompt('Enter the URL:', 'http://'));
+            	}
+        	});
+
+        	const inputFields = document.querySelectorAll('input[type="text"], .editable');
+        	inputFields.forEach(field => {
+            	field.addEventListener('keydown', function(event) {
+                	if (event.ctrlKey && event.key === 'Enter') {
+                    	event.preventDefault();
+                    	document.execCommand('insertLineBreak');
+                	} else if (event.shiftKey && event.key === 'Enter') {
+                    	event.preventDefault();
+                    	addRow();
+                	}
+            	});
+        	});
+
+        	document.querySelector('form').addEventListener('submit', function(event) {
+            	event.preventDefault();
+            	generateLessonPlan();
+        	});
+    	});
+
+    	function generateLessonPlan() {
+        	const lessonPlan = document.getElementById("generated-lesson-plan");
+        	const lessonName = document.getElementById("lesson-name").value;
+        	const lessonDays = document.getElementById("lesson-days").value;
+        	const unit = document.getElementById("unit").value;
+        	const lessonMaterials = document.getElementById("lesson-materials").innerHTML;
+        	const lessonObjective = document.getElementById("lesson-objective").innerHTML;
+        	const swlg = document.getElementById("swlg").innerHTML;
+        	const lessonAssessment = document.getElementById("lesson-assessment").innerHTML;
+        	const differentiationOverall = document.getElementById("differentiation-overall").innerHTML;
+        	const differentiationHighFlyers = document.getElementById("differentiation-high-flyers").innerHTML;
+        	const differentiationVisionHearing = document.getElementById("differentiation-vision-hearing").innerHTML;
+        	const differentiationADHD = document.getElementById("differentiation-adhd").innerHTML;
+        	const differentiationOther = document.getElementById("differentiation-other").innerHTML;
+        	const teacherReflection = document.getElementById("teacher-reflection").innerHTML;
+
+        	let steps = '';
+        	const rows = document.getElementById("lesson-steps-table").getElementsByTagName('tbody')[0].rows;
+        	for (let row of rows) {
+            	const stepNumber = row.cells[0].innerText;
+            	const studentsWillDo = row.cells[1].querySelector('.editable').innerHTML;
+            	const teacherWillDo = row.cells[2].querySelector('.editable').innerHTML;
+            	const timing = row.cells[3].getElementsByTagName('input')[0].value;
+            	steps += `<tr><td class="first-column">${stepNumber}</td><td class="second-column">${studentsWillDo}</td><td class="third-column">${teacherWillDo}</td><td class="fourth-column">${timing}</td></tr>`;
+        	}
+
+        	const lessonPlanContent = `
+            	<table style="width: 100%; border-collapse: collapse;">
+                	<tr><th colspan="4" class="category-heading" style="width: 100%; border-right: 1px solid #ddd;">Lesson Plan</th></tr>
+                	<tr><td class="sub-category-heading first-column">Lesson Name</td><td colspan="3">${lessonName}</td></tr>
+                	<tr><td class="sub-category-heading first-column">Lesson Days</td><td colspan="3">${lessonDays}</td></tr>
+                	<tr><td class="sub-category-heading first-column">Unit</td><td colspan="3">${unit}</td></tr>
+                	<tr><td class="sub-category-heading first-column">Lesson Materials</td><td colspan="3">${lessonMaterials}</td></tr>
+                	<tr><td class="sub-category-heading first-column">Lesson Learning Objective</td><td colspan="3">${lessonObjective}</td></tr>
+                	<tr><td class="sub-category-heading first-column">Connection to SWLG</td><td colspan="3">${swlg}</td></tr>
+                	<tr><td colspan="4" class="category-heading" style="width: 100%; border-right: 1px solid #ddd;">Lesson Steps</td></tr>
+                	<tr class="sub-category-heading"><td class="first-column">#</td><td class="second-column">Students will do</td><td class="third-column">Teacher will do</td><td class="fourth-column">Timing</td></tr>
+                	${steps}
+                	<tr><td colspan="4" class="category-heading" style="width: 100%; border-right: 1px solid #ddd;">Other Planning</td></tr>
+                	<tr><td rowspan="5" class="sub-category-heading first-column">Differentiations</td><td class="sub-category-heading-light">Overall</td><td colspan="2">${differentiationOverall}</td></tr>
+                	<tr><td class="sub-category-heading-light">Other</td><td colspan="2">${differentiationOther}</td></tr>
+                	<tr><td class="sub-category-heading-light">High Flyers</td><td colspan="2">${differentiationHighFlyers}</td></tr>
+                	<tr><td class="sub-category-heading-light">Vision/Hearing</td><td colspan="2">${differentiationVisionHearing}</td></tr>
+                	<tr><td class="sub-category-heading-light">ADHD/Executive</td><td colspan="2">${differentiationADHD}</td></tr>
+                	<tr><td class="sub-category-heading first-column">Lesson Assessment</td><td colspan="3">${lessonAssessment}</td></tr>
+                	<tr><td class="sub-category-heading first-column">Teacher Reflection</td><td colspan="3">${teacherReflection}</td></tr>
+            	</table>
+        	`;
+
+        	lessonPlan.innerHTML = lessonPlanContent;
+
+        	const hiddenContainer = document.getElementById('hidden-container');
+        	hiddenContainer.innerHTML = lessonPlanContent;
+    	}
+
+    	function copyLessonPlan() {
+        	const hiddenContainer = document.getElementById('hidden-container');
+        	const range = document.createRange();
+        	range.selectNode(hiddenContainer);
+        	window.getSelection().removeAllRanges();
+        	window.getSelection().addRange(range);
+        	document.execCommand('copy');
+        	window.getSelection().removeAllRanges();
+        	alert('Lesson plan copied to clipboard');
+    	}
+	</script>
+</head>
+<body>
+	<h1>Lesson Plan Generator</h1>
+	<form>
+    	<div class="section">
+        	<label for="lesson-name">Lesson Name</label>
+        	<input type="text" id="lesson-name" name="lesson-name">
+    	</div>
+    	<div class="section">
+        	<label for="lesson-days">Lesson Days</label>
+        	<input type="text" id="lesson-days" name="lesson-days">
+    	</div>
+    	<div class="section">
+        	<label for="unit">Unit</label>
+        	<input type="text" id="unit" name="unit">
+    	</div>
+    	<div class="section">
+        	<label for="lesson-materials">Lesson Materials</label>
+        	<div id="lesson-materials" class="editable" contenteditable="true"></div>
+    	</div>
+    	<div class="section">
+        	<label for="lesson-objective">Lesson Learning Objective</label>
+        	<div id="lesson-objective" class="editable" contenteditable="true"></div>
+    	</div>
+    	<div class="section">
+        	<label for="swlg">Connection to SWLG (School Wide Learning Goals)</label>
+        	<div id="swlg" class="editable" contenteditable="true"></div>
+    	</div>
+    	<div class="section">
+        	<label for="lesson-steps">Lesson Steps</label>
+        	<table id="lesson-steps-table">
+            	<thead>
+                	<tr>
+                    	<th class="first-column">#</th>
+                    	<th class="second-column">Students will do</th>
+                    	<th class="third-column">Teacher will do</th>
+                    	<th class="fourth-column">Timing</th>
+                	</tr>
+            	</thead>
+            	<tbody>
+                	<tr>
+                    	<td class="first-column">1</td>
+                    	<td class="second-column"><div class="editable" contenteditable="true"></div></td>
+                    	<td class="third-column"><div class="editable" contenteditable="true"></div></td>
+                    	<td class="fourth-column"><input type="text" class="timing-input" name="timing" onblur="updateTiming(this, 0)"></td>
+                	</tr>
+            	</tbody>
+        	</table>
+    	</div>
+    	<div class="section">
+        	<label for="lesson-assessment">Lesson Assessment</label>
+        	<div id="lesson-assessment" class="editable" contenteditable="true"></div>
+    	</div>
+    	<div class="section">
+        	<label for="differentiation-overall">Differentiation - Overall</label>
+        	<div id="differentiation-overall" class="differentiation-textarea editable" contenteditable="true"></div>
+    	</div>
+    	<div class="section">
+        	<label for="differentiation-other">Differentiation - Other</label>
+        	<div id="differentiation-other" class="differentiation-textarea editable" contenteditable="true"></div>
+    	</div>
+    	<div class="section">
+        	<label for="differentiation-high-flyers">Differentiation - High Flyers</label>
+        	<div id="differentiation-high-flyers" class="differentiation-textarea editable" contenteditable="true"></div>
+    	</div>
+    	<div class="section">
+        	<label for="differentiation-vision-hearing">Differentiation - Vision/Hearing</label>
+        	<div id="differentiation-vision-hearing" class="differentiation-textarea editable" contenteditable="true"></div>
+    	</div>
+    	<div class="section">
+        	<label for="differentiation-adhd">Differentiation - ADHD/Executive</label>
+        	<div id="differentiation-adhd" class="differentiation-textarea editable" contenteditable="true"></div>
+    	</div>
+    	<div class="section">
+        	<label for="teacher-reflection">Teacher Reflection</label>
+        	<div id="teacher-reflection" class="editable" contenteditable="true"></div>
+    	</div>
+    	<div class="center-buttons">
+        	<button type="button" onclick="addRow()">Add Lesson Step (Shift+Enter)</button>
+        	<button type="submit">Generate Lesson Plan</button>
+        	<button type="button" onclick="copyLessonPlan()">Copy to Clipboard</button>
+    	</div>
+	</form>
+	<div id="generated-lesson-plan"></div>
+	<div id="hidden-container"></div>
+	<div class="toolbar">
+    	<button type="button" onclick="execCommand('bold')">Bold</button>
+    	<button type="button" onclick="execCommand('italic')">Italic</button>
+    	<button type="button" onclick="execCommand('underline')">Underline</button>
+    	<button type="button" onclick="execCommand('strikeThrough')">Strikethrough</button>
+    	<button type="button" onclick="execCommandWithArg('createLink', prompt('Enter the URL:', 'http://'))">Link</button>
+	</div>
+</body>
+</html>
+
+
+
